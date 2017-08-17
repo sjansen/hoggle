@@ -1,0 +1,29 @@
+#!/bin/sh
+set -e
+
+sleep 1 # allow minio to start
+echo ========================================
+go version
+echo ========================================
+printenv | sort
+echo ========================================
+go test -tags integration ./cmd/... ./pkg/...
+echo ========================================
+echo go vet...
+go vet  ./cmd/... ./pkg/...
+echo ========================================
+echo golint...
+golint -set_exit_status cmd/
+golint -set_exit_status pkg/
+echo ========================================
+echo gocyclo...
+gocyclo -over 15 cmd/ pkg/
+echo ========================================
+echo gofmt...
+UNFORMATTED=`gofmt -l . | (grep -v vendor/ || true)`
+if [ -n "$UNFORMATTED" ]; then
+    printf "gofmt needed:\n--------------------\n"
+    printf "$UNFORMATTED"
+    echo   # blank line
+    exit 1
+fi

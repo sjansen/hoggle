@@ -1,0 +1,10 @@
+# Directories
+/dist/
+/vendor/
+
+# Files
+/hoggle
+.DS_Store
+
+# Patterns
+.*.sw[op]

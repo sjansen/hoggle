@@ -1,0 +1,30 @@
+#!/bin/sh
+
+IFS='
+'
+
+ERRORS=''
+UNFORMATTED=''
+for FILE in `git diff --cached --name-only --diff-filter=ACM | grep -v 'vendor/' | grep '\.go$'`
+do
+  RESULT=`git cat-file -p ":$FILE" | gofmt -l 2>&1`
+  if [ $? -ne 0 ]; then
+    RESULT=`echo "$RESULT" | sed "s|<standard input>|$FILE|"`
+    ERRORS="${ERRORS}${RESULT}\n"
+  elif [ -n "$RESULT" ]; then
+    UNFORMATTED="${UNFORMATTED}${FILE}\n"
+  fi
+  if [ -n "$ERRORS" -o -n "$UNFORMATTED" ]; then
+    if [ -n "$ERRORS" ]; then
+      printf "errors:\n--------------------\n"
+      printf "$ERRORS"
+      echo   # blank line
+    fi
+    if [ -n "$UNFORMATTED" ]; then
+      printf "gofmt needed:\n--------------------\n"
+      printf "$UNFORMATTED"
+      echo   # blank line
+    fi
+    exit 1
+  fi
+done

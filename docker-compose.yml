@@ -1,0 +1,25 @@
+version: '2'
+services:
+  go:
+    build:
+      context: ./docker/go
+    command: ./scripts/run-all-tests
+    environment:
+      AWS_ACCESS_KEY_ID:     "AKIzEXAMPLE123456789"
+      AWS_SECRET_ACCESS_KEY: "EXAMPLE!SECRET!KEY0123example!secret!key"
+      HOGGLE_TEST_S3_BUCKET:   "bucket1"
+      HOGGLE_TEST_S3_PREFIX:   "stuff/"
+      HOGGLE_TEST_S3_REGION:   "us-east-1"
+      HOGGLE_TEST_S3_ENDPOINT: "http://minio:9000"
+    links:
+     - minio
+    volumes:
+     - .:/go/src/github.com/sjansen/hoggle
+    working_dir: /go/src/github.com/sjansen/hoggle
+  minio:
+    build:
+      context: ./docker/minio
+    command: ["server", "/buckets"]
+    environment:
+      MINIO_ACCESS_KEY: "AKIzEXAMPLE123456789"
+      MINIO_SECRET_KEY: "EXAMPLE!SECRET!KEY0123example!secret!key"
