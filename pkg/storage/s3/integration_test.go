@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/require"
 
-	"github.com/sjansen/hoggle/pkg/s3"
+	"github.com/sjansen/hoggle/pkg/storage/s3"
 )
 
 const battlecry = "Spoon!"
@@ -32,13 +32,17 @@ func TestRoundTrip(t *testing.T) {
 		)
 	}
 
-	b := s3.NewBucket(bucket, prefix, &s3.BucketOptions{
+	f := &s3.Factory{
 		Region:   region,
+		Bucket:   bucket,
+		Prefix:   prefix,
 		Endpoint: endpoint,
-	})
+	}
+	b, err := f.New()
+	require.NoError(err)
 
 	src := bytes.NewReader([]byte(battlecry))
-	err := b.Upload("battlecry", src)
+	err = b.Upload("battlecry", src)
 	require.NoError(err)
 
 	buf := make([]byte, 0)

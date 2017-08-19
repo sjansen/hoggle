@@ -7,11 +7,15 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+
+	"github.com/sjansen/hoggle/pkg/storage"
 )
 
-type BucketOptions struct {
-	Endpoint string
+type Factory struct {
 	Region   string
+	Bucket   string
+	Prefix   string
+	Endpoint string
 }
 
 type Bucket struct {
@@ -21,22 +25,22 @@ type Bucket struct {
 	downloader *s3manager.Downloader
 }
 
-func NewBucket(bucket, prefix string, options *BucketOptions) *Bucket {
+func (f *Factory) New() (storage.Storage, error) {
 	config := &aws.Config{}
-	if options != nil && options.Endpoint != "" {
-		config.Region = aws.String(options.Region)
-		config.Endpoint = aws.String(options.Endpoint)
+	if f.Endpoint != "" {
+		config.Region = aws.String(f.Region)
+		config.Endpoint = aws.String(f.Endpoint)
 		config.DisableSSL = aws.Bool(true)
 		config.S3ForcePathStyle = aws.Bool(true)
 	}
 	sess := session.Must(session.NewSession(config))
 	b := &Bucket{
-		bucket:     bucket,
-		prefix:     prefix,
+		bucket:     f.Bucket,
+		prefix:     f.Prefix,
 		uploader:   s3manager.NewUploader(sess),
 		downloader: s3manager.NewDownloader(sess),
 	}
-	return b
+	return b, nil
 }
 
 func (b *Bucket) Download(oid string, dst io.WriterAt) error {
