@@ -56,4 +56,22 @@ func TestParse(t *testing.T) {
 			assert.Equal(expected, actual)
 		}
 	}
+
+	for uri, expected := range map[string]string{
+		"":                `invalid storage uri: ""`,
+		"invalid":         `invalid storage uri: "invalid"`,
+		":invalid":        `invalid storage uri: ":invalid"`,
+		"s3:bucket":       `invalid storage uri: "s3:bucket"`,
+		"s3://":           `invalid storage uri: "s3://"`,
+		"s3+ftp://foo":    `unrecognized scheme: "s3+ftp"`,
+		"s3+http://host":  `missing bucket: "s3+http://host"`,
+		"s3+http://host/": `missing bucket: "s3+http://host/"`,
+		"//bucket":        `invalid storage uri: "//bucket"`,
+	} {
+		_, err := parse(uri)
+		if assert.Error(err) {
+			actual := err.Error()
+			assert.Equal(expected, actual)
+		}
+	}
 }

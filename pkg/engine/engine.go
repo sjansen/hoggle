@@ -21,10 +21,8 @@ func Standalone(uri string) error {
 
 func parse(uri string) (f storage.Factory, err error) {
 	u, err := url.Parse(uri)
-	if err != nil {
-		return
-	} else if u.Scheme == "" || u.Host == "" || u.Opaque != "" {
-		err = fmt.Errorf("invalid: %s", uri)
+	if err != nil || u.Scheme == "" || u.Host == "" || u.Opaque != "" {
+		err = fmt.Errorf("invalid storage uri: %q", uri)
 		return
 	}
 
@@ -53,7 +51,7 @@ func parse(uri string) (f storage.Factory, err error) {
 			}
 		}
 		if len(bucket) < 1 {
-			err = fmt.Errorf("missing bucket: %s", uri)
+			err = fmt.Errorf("missing bucket: %q", uri)
 			return
 		}
 		f = &s3.Factory{
@@ -65,6 +63,6 @@ func parse(uri string) (f storage.Factory, err error) {
 		return
 	}
 
-	err = fmt.Errorf("unrecognized scheme: %s", u.Scheme)
+	err = fmt.Errorf("unrecognized scheme: %q", u.Scheme)
 	return
 }
