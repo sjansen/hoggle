@@ -3,10 +3,10 @@ package storage
 import "io"
 
 type Factory interface {
-	New() (Storage, error)
+	New() (Container, error)
 }
 
-type Storage interface {
+type Container interface {
 	Download(oid string, dst io.WriterAt) error
 	Upload(oid string, src io.ReadSeeker) error
 }

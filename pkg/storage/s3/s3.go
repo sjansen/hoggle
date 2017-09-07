@@ -25,7 +25,7 @@ type Bucket struct {
 	downloader *s3manager.Downloader
 }
 
-func (f *Factory) New() (storage.Storage, error) {
+func (f *Factory) New() (storage.Container, error) {
 	config := &aws.Config{}
 	if f.Endpoint != "" {
 		config.Region = aws.String(f.Region)

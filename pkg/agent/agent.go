@@ -41,7 +41,7 @@ type uploadCompleteMsg struct {
 	Error *errorMsg `json:"error,omitempty"`
 }
 
-func Run(r io.Reader, w io.Writer, s storage.Storage) error {
+func Run(r io.Reader, w io.Writer, c storage.Container) error {
 	stdin := bufio.NewScanner(r)
 	stdout := bufio.NewWriter(w)
 
