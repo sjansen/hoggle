@@ -37,6 +37,12 @@ type InitMsg struct {
 	ConcurrentTransfers int    `json:"concurrenttransfers"`
 }
 
+type DownloadMsg struct {
+	Event string `json:"event"`
+	Oid   string `json:"oid"`
+	Size  int64  `json:"size"`
+}
+
 type UploadMsg struct {
 	Event string `json:"event"`
 	Oid   string `json:"oid"`
@@ -54,6 +60,13 @@ type progressMsg struct {
 	Oid            string `json:"oid"`
 	BytesSinceLast int64  `json:"bytesSinceLast"`
 	BytesSoFar     int64  `json:"bytesSoFar"`
+}
+
+type downloadCompleteMsg struct {
+	Event string    `json:"event"`
+	Oid   string    `json:"oid"`
+	Path  string    `json:"path"`
+	Error *errorMsg `json:"error,omitempty"`
 }
 
 type uploadCompleteMsg struct {
@@ -120,6 +133,34 @@ func (s *Session) Ready() (err error) {
 	return
 }
 
+func (s *Session) ReportCompletedDownload(oid, path string) (err error) {
+	if complete, ok := s.files[oid]; !ok {
+		return fmt.Errorf("invalid oid: %q", oid)
+	} else if complete {
+		return fmt.Errorf("already complete: %q", oid)
+	}
+
+	b, err := json.Marshal(&downloadCompleteMsg{
+		Event: "complete",
+		Oid:   oid,
+		Path:  path,
+	})
+	if err != nil {
+		return
+	}
+
+	if _, err = s.stdout.Write(b); err != nil {
+		return
+	}
+	if err = s.stdout.WriteByte('\n'); err != nil {
+		return
+	}
+	err = s.stdout.Flush()
+
+	s.files[oid] = true
+	return
+}
+
 func (s *Session) ReportCompletedUpload(oid string) (err error) {
 	if complete, ok := s.files[oid]; !ok {
 		return fmt.Errorf("invalid oid: %q", oid)
@@ -147,6 +188,7 @@ func (s *Session) ReportCompletedUpload(oid string) (err error) {
 	return
 }
 
+// TODO ReportFailedDownload()
 // TODO ReportFailedUpload()
 
 func (s *Session) ReportProgress(oid string, change, total int64) (err error) {
@@ -173,6 +215,42 @@ func (s *Session) ReportProgress(oid string, change, total int64) (err error) {
 		return
 	}
 	err = s.stdout.Flush()
+
+	return
+}
+
+func (s *Session) StartDownload() (msg *DownloadMsg, err error) {
+	if !s.ready {
+		err = mustReadyErr
+		return
+	} else if !s.down {
+		err = notDownloadErr
+		return
+	} else if s.term {
+		err = terminatedErr
+		return
+	}
+
+	if ok := s.stdin.Scan(); !ok {
+		err = errors.New("unexpected end of input")
+		return
+	}
+
+	line := s.stdin.Text()
+	tmp := &DownloadMsg{}
+	if err = json.Unmarshal([]byte(line), tmp); err != nil {
+		return
+	}
+
+	switch tmp.Event {
+	case "terminate":
+		err = Terminate
+	case "download":
+		msg = tmp
+		s.files[msg.Oid] = false
+	default:
+		err = fmt.Errorf("unexpected message: %q", line)
+	}
 
 	return
 }
