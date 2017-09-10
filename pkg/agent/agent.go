@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/sjansen/hoggle/pkg/agent/protocol"
 	"github.com/sjansen/hoggle/pkg/storage"
 )
 
 func Run(r io.Reader, w io.Writer, c storage.Container) error {
-	session := NewSession(r, w)
+	session := protocol.NewSession(r, w)
 
 	init, err := session.Init()
 	if err != nil {
@@ -27,10 +28,10 @@ func Run(r io.Reader, w io.Writer, c storage.Container) error {
 	return fmt.Errorf("unexpected operation: %q", init.Operation)
 }
 
-func upload(s *Session) error {
+func upload(s *protocol.Session) error {
 	for {
 		msg, err := s.StartUpload()
-		if err == Terminate {
+		if err == protocol.Terminate {
 			return nil
 		} else if err != nil {
 			return err
