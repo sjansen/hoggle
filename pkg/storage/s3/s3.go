@@ -2,6 +2,7 @@ package s3
 
 import (
 	"io"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -26,14 +27,21 @@ type Bucket struct {
 }
 
 func (f *Factory) New() (storage.Container, error) {
-	config := &aws.Config{}
+	opts := session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}
+	config := &opts.Config
 	if f.Endpoint != "" {
 		config.Region = aws.String(f.Region)
 		config.Endpoint = aws.String(f.Endpoint)
-		config.DisableSSL = aws.Bool(true)
+		if strings.HasPrefix(f.Endpoint, "http://") {
+			config.DisableSSL = aws.Bool(true)
+		}
 		config.S3ForcePathStyle = aws.Bool(true)
+	} else if f.Region != "" {
+		config.Region = aws.String(f.Region)
 	}
-	sess := session.Must(session.NewSession(config))
+	sess := session.Must(session.NewSessionWithOptions(opts))
 	b := &Bucket{
 		bucket:     f.Bucket,
 		prefix:     f.Prefix,
