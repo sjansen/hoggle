@@ -51,11 +51,12 @@ func (a *Agent) download(s *protocol.Session) error {
 			return err
 		}
 
-		err = a.Blobs.Download(msg.Oid, file)
-		// TODO report failed download
-
-		s.ReportProgress(msg.Oid, msg.Size, msg.Size)
-		s.ReportCompletedDownload(msg.Oid, file.Name())
+		if err = a.Blobs.Download(msg.Oid, file); err != nil {
+			s.ReportFailedDownload(msg.Oid, err.Error())
+		} else {
+			s.ReportProgress(msg.Oid, msg.Size, msg.Size)
+			s.ReportCompletedDownload(msg.Oid, file.Name())
+		}
 	}
 }
 
@@ -73,10 +74,11 @@ func (a *Agent) upload(s *protocol.Session) error {
 			return err
 		}
 
-		err = a.Blobs.Upload(msg.Oid, file)
-		// TODO report failed upload
-
-		s.ReportProgress(msg.Oid, msg.Size, msg.Size)
-		s.ReportCompletedUpload(msg.Oid)
+		if err = a.Blobs.Upload(msg.Oid, file); err != nil {
+			s.ReportFailedDownload(msg.Oid, err.Error())
+		} else {
+			s.ReportProgress(msg.Oid, msg.Size, msg.Size)
+			s.ReportCompletedUpload(msg.Oid)
+		}
 	}
 }

@@ -3,9 +3,12 @@ package engine
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 
+	"github.com/sjansen/hoggle/pkg/agent"
 	"github.com/sjansen/hoggle/pkg/storage"
+	"github.com/sjansen/hoggle/pkg/storage/local"
 	"github.com/sjansen/hoggle/pkg/storage/s3"
 )
 
@@ -15,8 +18,18 @@ func Standalone(uri string) error {
 		return err
 	}
 
-	fmt.Printf("%+v\n", f)
-	return nil
+	container, err := f.New()
+	if err != nil {
+		return err
+	}
+
+	agent := &agent.Agent{
+		Blobs:  container,
+		Files:  &local.Filesystem{},
+		Stdin:  os.Stdin,
+		Stdout: os.Stdout,
+	}
+	return agent.Run()
 }
 
 func parse(uri string) (f storage.Factory, err error) {

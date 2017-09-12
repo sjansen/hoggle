@@ -65,7 +65,7 @@ type progressMsg struct {
 type downloadCompleteMsg struct {
 	Event string    `json:"event"`
 	Oid   string    `json:"oid"`
-	Path  string    `json:"path"`
+	Path  string    `json:"path,omitempty"`
 	Error *errorMsg `json:"error,omitempty"`
 }
 
@@ -133,13 +133,26 @@ func (s *Session) Ready() (err error) {
 	return
 }
 
-func (s *Session) ReportCompletedDownload(oid, path string) (err error) {
+func (s *Session) complete(oid string, b []byte) (err error) {
 	if complete, ok := s.files[oid]; !ok {
 		return fmt.Errorf("invalid oid: %q", oid)
 	} else if complete {
 		return fmt.Errorf("already complete: %q", oid)
 	}
 
+	if _, err = s.stdout.Write(b); err != nil {
+		return
+	}
+	if err = s.stdout.WriteByte('\n'); err != nil {
+		return
+	}
+	err = s.stdout.Flush()
+
+	s.files[oid] = true
+	return
+}
+
+func (s *Session) ReportCompletedDownload(oid, path string) (err error) {
 	b, err := json.Marshal(&downloadCompleteMsg{
 		Event: "complete",
 		Oid:   oid,
@@ -148,26 +161,10 @@ func (s *Session) ReportCompletedDownload(oid, path string) (err error) {
 	if err != nil {
 		return
 	}
-
-	if _, err = s.stdout.Write(b); err != nil {
-		return
-	}
-	if err = s.stdout.WriteByte('\n'); err != nil {
-		return
-	}
-	err = s.stdout.Flush()
-
-	s.files[oid] = true
-	return
+	return s.complete(oid, b)
 }
 
 func (s *Session) ReportCompletedUpload(oid string) (err error) {
-	if complete, ok := s.files[oid]; !ok {
-		return fmt.Errorf("invalid oid: %q", oid)
-	} else if complete {
-		return fmt.Errorf("already complete: %q", oid)
-	}
-
 	b, err := json.Marshal(&uploadCompleteMsg{
 		Event: "complete",
 		Oid:   oid,
@@ -175,21 +172,38 @@ func (s *Session) ReportCompletedUpload(oid string) (err error) {
 	if err != nil {
 		return
 	}
-
-	if _, err = s.stdout.Write(b); err != nil {
-		return
-	}
-	if err = s.stdout.WriteByte('\n'); err != nil {
-		return
-	}
-	err = s.stdout.Flush()
-
-	s.files[oid] = true
-	return
+	return s.complete(oid, b)
 }
 
-// TODO ReportFailedDownload()
-// TODO ReportFailedUpload()
+func (s *Session) ReportFailedDownload(oid, msg string) (err error) {
+	b, err := json.Marshal(&downloadCompleteMsg{
+		Event: "complete",
+		Oid:   oid,
+		Error: &errorMsg{
+			Code:    1,
+			Message: msg,
+		},
+	})
+	if err != nil {
+		return
+	}
+	return s.complete(oid, b)
+}
+
+func (s *Session) ReportFailedUpload(oid, msg string) (err error) {
+	b, err := json.Marshal(&uploadCompleteMsg{
+		Event: "complete",
+		Oid:   oid,
+		Error: &errorMsg{
+			Code:    1,
+			Message: msg,
+		},
+	})
+	if err != nil {
+		return
+	}
+	return s.complete(oid, b)
+}
 
 func (s *Session) ReportProgress(oid string, change, total int64) (err error) {
 	if complete, ok := s.files[oid]; !ok {
