@@ -12,6 +12,8 @@ import (
 	"github.com/sjansen/hoggle/pkg/storage/s3"
 )
 
+type urlParser func(url *url.URL) (f storage.Factory, err error)
+
 func Standalone(uri string) error {
 	f, err := parse(uri)
 	if err != nil {
@@ -32,6 +34,12 @@ func Standalone(uri string) error {
 	return agent.Run()
 }
 
+var schemes = map[string]urlParser{
+	"s3":       parseS3,
+	"s3+http":  parseS3,
+	"s3+https": parseS3,
+}
+
 func parse(uri string) (f storage.Factory, err error) {
 	u, err := url.Parse(uri)
 	if err != nil || u.Scheme == "" || u.Host == "" || u.Opaque != "" {
@@ -39,43 +47,46 @@ func parse(uri string) (f storage.Factory, err error) {
 		return
 	}
 
-	q := u.Query()
-	switch u.Scheme {
-	case "s3", "s3+http", "s3+https":
-		var endpoint string
-		region := q.Get("region")
-		bucket := u.Host
-		prefix := u.Path
-		if len(prefix) >= 1 && prefix[0] == '/' {
-			prefix = prefix[1:]
-		}
-		if len(u.Scheme) > 2 {
-			scheme := u.Scheme[3:]
-			endpoint = fmt.Sprintf("%s://%s", scheme, u.Host)
-			if len(prefix) < 1 {
-				bucket = ""
-				prefix = ""
-			} else if idx := strings.Index(prefix, "/"); idx < 0 {
-				bucket = prefix
-				prefix = ""
-			} else {
-				bucket = prefix[0:idx]
-				prefix = prefix[idx+1:]
-			}
-		}
-		if len(bucket) < 1 {
-			err = fmt.Errorf("missing bucket: %q", uri)
-			return
-		}
-		f = &s3.Factory{
-			Region:   region,
-			Bucket:   bucket,
-			Prefix:   prefix,
-			Endpoint: endpoint,
-		}
-		return
+	if parseURL, ok := schemes[u.Scheme]; ok {
+		return parseURL(u)
 	}
 
 	err = fmt.Errorf("unrecognized scheme: %q", u.Scheme)
+	return
+}
+
+func parseS3(url *url.URL) (f storage.Factory, err error) {
+	var endpoint string
+	q := url.Query()
+	region := q.Get("region")
+	bucket := url.Host
+	prefix := url.Path
+	if len(prefix) >= 1 && prefix[0] == '/' {
+		prefix = prefix[1:]
+	}
+	if len(url.Scheme) > 2 {
+		scheme := url.Scheme[3:]
+		endpoint = fmt.Sprintf("%s://%s", scheme, url.Host)
+		if len(prefix) < 1 {
+			bucket = ""
+			prefix = ""
+		} else if idx := strings.Index(prefix, "/"); idx < 0 {
+			bucket = prefix
+			prefix = ""
+		} else {
+			bucket = prefix[0:idx]
+			prefix = prefix[idx+1:]
+		}
+	}
+	if len(bucket) < 1 {
+		err = fmt.Errorf("missing bucket: %q", url.String())
+		return
+	}
+	f = &s3.Factory{
+		Region:   region,
+		Bucket:   bucket,
+		Prefix:   prefix,
+		Endpoint: endpoint,
+	}
 	return
 }
