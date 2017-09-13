@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"fmt"
 	"io"
 	"strings"
 
@@ -42,9 +43,13 @@ func (f *Factory) New() (storage.Container, error) {
 		config.Region = aws.String(f.Region)
 	}
 	sess := session.Must(session.NewSessionWithOptions(opts))
+	prefix := f.Prefix
+	if len(prefix) > 0 && prefix[len(prefix)-1] != '/' {
+		prefix += "/"
+	}
 	b := &Bucket{
 		bucket:     f.Bucket,
-		prefix:     f.Prefix,
+		prefix:     prefix,
 		uploader:   s3manager.NewUploader(sess),
 		downloader: s3manager.NewDownloader(sess),
 	}
@@ -52,9 +57,10 @@ func (f *Factory) New() (storage.Container, error) {
 }
 
 func (b *Bucket) Download(oid string, dst io.WriterAt) error {
+	key := b.oid2key(oid)
 	params := &s3.GetObjectInput{
 		Bucket: aws.String(b.bucket),
-		Key:    aws.String(b.prefix + oid),
+		Key:    aws.String(key),
 	}
 	if _, err := b.downloader.Download(dst, params); err != nil {
 		return err
@@ -64,9 +70,10 @@ func (b *Bucket) Download(oid string, dst io.WriterAt) error {
 }
 
 func (b *Bucket) Upload(oid string, src io.ReadSeeker) error {
+	key := b.oid2key(oid)
 	params := &s3manager.UploadInput{
 		Bucket: aws.String(b.bucket),
-		Key:    aws.String(b.prefix + oid),
+		Key:    aws.String(key),
 		Body:   src,
 	}
 	if _, err := b.uploader.Upload(params); err != nil {
@@ -74,4 +81,13 @@ func (b *Bucket) Upload(oid string, src io.ReadSeeker) error {
 	} else {
 		return nil
 	}
+}
+
+func (b *Bucket) oid2key(oid string) (key string) {
+	if len(oid) < 4 {
+		key = fmt.Sprintf("%sobjects/%s", b.prefix, oid)
+	} else {
+		key = fmt.Sprintf("%sobjects/%s/%s/%s", b.prefix, oid[0:2], oid[2:4], oid)
+	}
+	return
 }
