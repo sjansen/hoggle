@@ -32,6 +32,17 @@ func TestParse(t *testing.T) {
 			Bucket: "grault",
 			Prefix: "garply/waldo",
 		},
+		"s3://fred/plugh?profile=internal": &s3.Factory{
+			Bucket:  "fred",
+			Prefix:  "plugh",
+			Profile: "internal",
+		},
+		"s3://xyzzy/thud?profile=public&region=us-west-2": &s3.Factory{
+			Region:  "us-west-2",
+			Bucket:  "xyzzy",
+			Prefix:  "thud",
+			Profile: "public",
+		},
 		"s3+http://example.com:8080/foo": &s3.Factory{
 			Bucket:   "foo",
 			Endpoint: "http://example.com:8080",

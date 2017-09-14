@@ -35,6 +35,7 @@ func parse(uri string) (f storage.Factory, err error) {
 func parseS3(url *url.URL) (f storage.Factory, err error) {
 	var endpoint string
 	q := url.Query()
+	profile := q.Get("profile")
 	region := q.Get("region")
 	bucket := url.Host
 	prefix := url.Path
@@ -64,6 +65,7 @@ func parseS3(url *url.URL) (f storage.Factory, err error) {
 		Bucket:   bucket,
 		Prefix:   prefix,
 		Endpoint: endpoint,
+		Profile:  profile,
 	}
 	return
 }

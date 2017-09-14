@@ -18,6 +18,7 @@ type Factory struct {
 	Bucket   string
 	Prefix   string
 	Endpoint string
+	Profile  string
 }
 
 type Bucket struct {
@@ -41,6 +42,9 @@ func (f *Factory) New() (storage.Container, error) {
 		config.S3ForcePathStyle = aws.Bool(true)
 	} else if f.Region != "" {
 		config.Region = aws.String(f.Region)
+	}
+	if f.Profile != "" {
+		opts.Profile = f.Profile
 	}
 	sess := session.Must(session.NewSessionWithOptions(opts))
 	prefix := f.Prefix
