@@ -12,7 +12,7 @@ func init() {
 
 var standaloneCmd = &cobra.Command{
 	Use:   "standalone",
-	Short: "Used by Git LFS",
+	Short: "Used internally by Git LFS",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return errors.New("not yet implemented")
 	},
