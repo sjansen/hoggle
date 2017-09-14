@@ -24,14 +24,24 @@ type Factory struct {
 type Bucket struct {
 	bucket     string
 	prefix     string
+	session    *session.Session
 	uploader   *s3manager.Uploader
 	downloader *s3manager.Downloader
 }
 
 func (f *Factory) New() (storage.Container, error) {
+	prefix := f.Prefix
+	if len(prefix) > 0 && prefix[len(prefix)-1] != '/' {
+		prefix += "/"
+	}
+
 	opts := session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}
+	if f.Profile != "" {
+		opts.Profile = f.Profile
+	}
+
 	config := &opts.Config
 	if f.Endpoint != "" {
 		config.Region = aws.String(f.Region)
@@ -43,17 +53,12 @@ func (f *Factory) New() (storage.Container, error) {
 	} else if f.Region != "" {
 		config.Region = aws.String(f.Region)
 	}
-	if f.Profile != "" {
-		opts.Profile = f.Profile
-	}
+
 	sess := session.Must(session.NewSessionWithOptions(opts))
-	prefix := f.Prefix
-	if len(prefix) > 0 && prefix[len(prefix)-1] != '/' {
-		prefix += "/"
-	}
 	b := &Bucket{
 		bucket:     f.Bucket,
 		prefix:     prefix,
+		session:    sess,
 		uploader:   s3manager.NewUploader(sess),
 		downloader: s3manager.NewDownloader(sess),
 	}
