@@ -2,7 +2,7 @@ package: github.com/sjansen/hoggle
 import:
 - package: github.com/spf13/cobra
 - package: github.com/aws/aws-sdk-go
-  version: ~1.10.26
+  version: ~1.10.47
 testImport:
 - package: github.com/stretchr/testify
   version: ~1.1.4

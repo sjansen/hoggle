@@ -1,8 +1,8 @@
-hash: 24546b2a2a6ef5186a32404683e55c08b9cbaabd79ae575496c18af22abac8ef
-updated: 2017-08-15T20:45:41.17375903-06:00
+hash: 18ff9cce9b6170b1142053c1814052d71ffa030cb0e88f0270b670730f3a314a
+updated: 2017-09-19T07:13:29.132412154-06:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: fdbcd18ca65c1deedcff224170b7d36f904f1c82
+  version: 9924c83c280264fb32f34cc5095204c451bedf0c
   subpackages:
   - aws
   - aws/awserr
@@ -38,9 +38,9 @@ imports:
 - name: github.com/jmespath/go-jmespath
   version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
 - name: github.com/spf13/cobra
-  version: cb731b898346822cc0c225c28550a8a29d93c732
+  version: b78744579491c1ceeaaa3b40205e56b0591b93a3
 - name: github.com/spf13/pflag
-  version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
+  version: 7aff26db30c1be810f9de5038ec5ef96ac41fd7c
 testImports:
 - name: github.com/davecgh/go-spew
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
