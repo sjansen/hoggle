@@ -1,11 +1,15 @@
 package s3
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -23,13 +27,19 @@ type Factory struct {
 
 type Bucket struct {
 	bucket     string
+	format     string
 	prefix     string
-	session    *session.Session
+	svc        *s3.S3
 	uploader   *s3manager.Uploader
 	downloader *s3manager.Downloader
 }
 
+var UnsupportBucketFormatErr = errors.New("unsupported bucket format")
+
+const bucketFormat = "1\n"
+
 func (f *Factory) New() (storage.Container, error) {
+	bucket := f.Bucket
 	prefix := f.Prefix
 	if len(prefix) > 0 && prefix[len(prefix)-1] != '/' {
 		prefix += "/"
@@ -56,16 +66,24 @@ func (f *Factory) New() (storage.Container, error) {
 
 	sess := session.Must(session.NewSessionWithOptions(opts))
 	b := &Bucket{
-		bucket:     f.Bucket,
+		bucket:     bucket,
 		prefix:     prefix,
-		session:    sess,
+		svc:        s3.New(sess),
 		uploader:   s3manager.NewUploader(sess),
 		downloader: s3manager.NewDownloader(sess),
 	}
+	if err := b.getFormat(); err != nil {
+		return nil, err
+	}
+
 	return b, nil
 }
 
 func (b *Bucket) Download(oid string, dst io.WriterAt) error {
+	if b.format != bucketFormat {
+		return UnsupportBucketFormatErr
+	}
+
 	key := b.oid2key(oid)
 	params := &s3.GetObjectInput{
 		Bucket: aws.String(b.bucket),
@@ -79,6 +97,12 @@ func (b *Bucket) Download(oid string, dst io.WriterAt) error {
 }
 
 func (b *Bucket) Upload(oid string, src io.ReadSeeker) error {
+	if b.format == "" {
+		if err := b.setFormat(); err != nil {
+			return err
+		}
+	}
+
 	key := b.oid2key(oid)
 	params := &s3manager.UploadInput{
 		Bucket: aws.String(b.bucket),
@@ -92,11 +116,53 @@ func (b *Bucket) Upload(oid string, src io.ReadSeeker) error {
 	}
 }
 
+func (b *Bucket) formatKey() (key string) {
+	return b.prefix + "hoggle-format"
+}
+
+func (b *Bucket) getFormat() (err error) {
+	resp, err := b.svc.GetObject(&s3.GetObjectInput{
+		Bucket: aws.String(b.bucket),
+		Key:    aws.String(b.formatKey()),
+		Range:  aws.String("bytes=0-255"),
+	})
+	if err != nil {
+		if e, ok := err.(awserr.Error); ok && e.Code() == s3.ErrCodeNoSuchKey {
+			err = nil
+		}
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	if bytes.Equal(body, []byte(bucketFormat)) {
+		b.format = string(body)
+	} else {
+		err = UnsupportBucketFormatErr
+	}
+	return
+}
+
 func (b *Bucket) oid2key(oid string) (key string) {
 	if len(oid) < 4 {
 		key = fmt.Sprintf("%sobjects/%s", b.prefix, oid)
 	} else {
 		key = fmt.Sprintf("%sobjects/%s/%s/%s", b.prefix, oid[0:2], oid[2:4], oid)
+	}
+	return
+}
+
+func (b *Bucket) setFormat() (err error) {
+	_, err = b.svc.PutObject(&s3.PutObjectInput{
+		Bucket: aws.String(b.bucket),
+		Key:    aws.String(b.formatKey()),
+		Body:   aws.ReadSeekCloser(strings.NewReader(bucketFormat)),
+	})
+	if err == nil {
+		b.format = bucketFormat
 	}
 	return
 }
