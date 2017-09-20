@@ -25,7 +25,7 @@ private repositories. It is not a good choice for public repositories.
    Hoggle loads your AWS credentials from the
    standard locations:
    * [environment variables](http://docs.aws.amazon.com/cli/latest/userguide/cli-environment.html)
-   * [files](http://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html)
+   * [config files](http://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html)
    * [instance metadata](http://docs.aws.amazon.com/cli/latest/userguide/cli-metadata.html)
 
 2) Install [Git LFS](https://github.com/git-lfs/git-lfs/wiki/Installation).
@@ -72,7 +72,7 @@ projects or use by small teams.
 
 #### Concurrent Transfer
 
-Hoggle has not been tested with concurrent transfer enable. This is a
+Hoggle has not been tested with concurrent transfer enabled. This is a
 temporary situation.
 
 #### Newly Cloned Repos
@@ -92,7 +92,7 @@ You can inspect what was checked out with 'git status'
 and retry the checkout with 'git checkout -f HEAD'
 ```
 
-This happens because Git LFS standalone tranfer agents must be configured
+This happens because standalone Git LFS tranfer agents must be configured
 manually after the repository has been cloned, they can not be added to
 `.lfsconfig` for security reasons. The work around it to clone the repo,
 configure Hoggle, then finish checking out a branch.
