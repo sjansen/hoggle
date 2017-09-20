@@ -22,9 +22,9 @@ func TestFactory(t *testing.T) {
 	}
 
 	container, err := f.New()
-	actual := container.(*Bucket)
-
 	require.NoError(err)
+
+	actual := container.(*Bucket)
 	require.Equal(expected.prefix, actual.prefix)
 }
 

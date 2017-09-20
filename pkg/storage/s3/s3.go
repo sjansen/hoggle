@@ -53,6 +53,7 @@ func (f *Factory) New() (storage.Container, error) {
 	}
 
 	config := &opts.Config
+	config.CredentialsChainVerboseErrors = aws.Bool(true)
 	if f.Endpoint != "" {
 		config.Region = aws.String(f.Region)
 		config.Endpoint = aws.String(f.Endpoint)
@@ -72,14 +73,13 @@ func (f *Factory) New() (storage.Container, error) {
 		uploader:   s3manager.NewUploader(sess),
 		downloader: s3manager.NewDownloader(sess),
 	}
-	if err := b.getFormat(); err != nil {
-		return nil, err
-	}
-
 	return b, nil
 }
 
 func (b *Bucket) Download(oid string, dst io.WriterAt) error {
+	if err := b.getFormat(); err != nil {
+		return err
+	}
 	if b.format != bucketFormat {
 		return UnsupportBucketFormatErr
 	}
@@ -97,6 +97,9 @@ func (b *Bucket) Download(oid string, dst io.WriterAt) error {
 }
 
 func (b *Bucket) Upload(oid string, src io.ReadSeeker) error {
+	if err := b.getFormat(); err != nil {
+		return err
+	}
 	if b.format == "" {
 		if err := b.setFormat(); err != nil {
 			return err
@@ -120,7 +123,12 @@ func (b *Bucket) formatKey() (key string) {
 	return b.prefix + "hoggle-format"
 }
 
+// TODO refactor bucket format checking
 func (b *Bucket) getFormat() (err error) {
+	if b.format != "" {
+		return nil
+	}
+
 	resp, err := b.svc.GetObject(&s3.GetObjectInput{
 		Bucket: aws.String(b.bucket),
 		Key:    aws.String(b.formatKey()),
