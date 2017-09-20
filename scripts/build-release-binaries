@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -e
+
+PROJECT=hoggle
+VERSION=$(git describe --tags)
+
+if [[ ! "$VERSION" =~ ^v[0-9]\.[0-9]+\.[0-9]+$ ]]
+then
+    echo "Invalid or missing release tag: ${VERSION}" >&2
+    exit 1
+fi
+
+mkdir -p dist/
+rm -rf dist/* || true
+for GOOS in darwin linux windows
+do
+  TARGET="${PROJECT}-${VERSION}-${GOOS}-amd64"
+  echo "Building ${TARGET}..."
+  GOOS=$GOOS GOARCH=amd64 go build -o "$TARGET"
+  zip "dist/${TARGET}.zip" "$TARGET"
+  rm "$TARGET"
+done

@@ -3,8 +3,7 @@
 default: test
 
 dist:
-	mkdir -p dist/
-	go build -o dist/hoggle
+	scripts/build-release-binaries
 
 test:
 	go test -tags integration ./cmd/... ./pkg/...
