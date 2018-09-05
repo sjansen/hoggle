@@ -3,6 +3,7 @@
 Hoggle enables Git LFS to store objects in S3 without server-side
 support.
 
+[![Project Status: Suspended – Initial development has started, but there has not yet been a stable, usable release; work has been stopped for the time being but the author(s) intend on resuming work.](https://www.repostatus.org/badges/latest/suspended.svg)](https://www.repostatus.org/#suspended)
 [![Go Report Card](https://goreportcard.com/badge/github.com/sjansen/hoggle)](https://goreportcard.com/report/github.com/sjansen/hoggle)
 
 ## Use Cases
