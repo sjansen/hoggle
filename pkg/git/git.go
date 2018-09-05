@@ -55,3 +55,21 @@ func (c *Config) Set(name, value string) (err error) {
 
 	return
 }
+
+func (c *Config) Unset(name, value_regex string) (err error) {
+	args := []string{"config", "--local", "--unset-all", name}
+	if value_regex != "" {
+		args = append(args, value_regex)
+	}
+
+	rc, _, _, err := subprocess.Run("git", args...)
+	if err == nil && rc != 0 {
+		err = fmt.Errorf(
+			"unable to unset git config value for %q", name,
+		)
+		// TODO log stdout & stderr
+		return
+	}
+
+	return
+}
