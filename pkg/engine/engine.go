@@ -38,3 +38,7 @@ func Standalone(uri string) error {
 	}
 	return agent.Run()
 }
+
+func Uninstall() error {
+	return config.Uninstall(&git.Config{})
+}
