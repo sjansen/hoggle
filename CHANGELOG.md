@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.1.2] - 2018-09-10
+### Added
+- Fix `uninstall` command by adding a missing file.
+
 ## [0.1.1] - 2018-09-05
 ### Added
 - New `uninstall` command to reverse the `init` command.
